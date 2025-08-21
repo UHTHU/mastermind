@@ -6,107 +6,87 @@
 
 using namespace std;
 
-// Function to generate a random secret code
-string generateSecretCode(int codeLength, int numColors) {
-    string code(codeLength, '0');
-    for (int i = 0; i < codeLength; ++i) {
-        code[i] = '0' + (rand() % numColors + 1); // Colors numbered 1 to numColors
+string generateSecretCode(int length) {
+    string code;
+    for (int i = 0; i < length; ++i) {
+        char digit = '0' + rand() % 10; // Generate a random digit from '0' to '9'
+        code += digit;
     }
     return code;
 }
 
-// Function to get player's guess
-string getPlayerGuess(int codeLength, int numColors) {
-    string guess(codeLength, '0');
-    cout << "Enter your guess (" << codeLength << " numbers, each from 1 to " << numColors << "): ";
-    for (int i = 0; i < codeLength; ++i) {
-        cin >> guess[i];
-        while (guess[i] < '1' || guess[i] > '0' + numColors) {
-            cout << "Invalid color. Enter a number from 1 to " << numColors << ": ";
-            cin >> guess[i];
-        }
+string getPlayerGuess(int length) {
+    string guess;
+    cout << "Enter your guess (" << length << " digits): ";
+    cin >> guess;
+    while (guess.length() != length || !all_of(guess.begin(), guess.end(), ::isdigit)) {
+        cout << "Invalid input. Please enter a " << length << "-digit number: ";
+        cin >> guess;
     }
     return guess;
 }
 
-// Function to evaluate guess against secret code
-pair<int, int> evaluateGuess(const string& secret, const string& guess) {
-    int correctPosition = 0; // Correct color in correct position
-    int correctColor = 0;    // Correct color in wrong position
-
-    string secretUsed(secret.size(), false);
-    string guessUsed(guess.size(), false);
-
-    // Count correct colors in correct positions
-    for (size_t i = 0; i < secret.size(); ++i) {
-        if (guess[i] == secret[i]) {
+string checkposition(string secretCode, string playerGuess) {
+    int correctPosition = 0;
+    for (int i = 0; i < secretCode.length(); ++i) {
+        if (secretCode[i] == playerGuess[i]) {
             correctPosition++;
-            secretUsed[i] = true;
-            guessUsed[i] = true;
         }
     }
-
-    // Count correct colors in wrong positions
-    for (size_t i = 0; i < guess.size(); ++i) {
-        if (!guessUsed[i]) {
-            for (size_t j = 0; j < secret.size(); ++j) {
-                if (!secretUsed[j] && guess[i] == secret[j]) {
-                    correctColor++;
-                    secretUsed[j] = true;
-                    break;
-                }
-            }
-        }
-    }
-
-    return {correctPosition, correctColor};
+    string output = "Number of Correct positions: " + to_string(correctPosition);
+    return output;
 }
 
-int main() {
-    srand(static_cast<unsigned>(time(0)));
-
-    const int codeLength = 4;  // Length of the code
-    const int numColors = 6;   // Number of possible colors
-    const int maxGuesses = 10; // Maximum number of guesses
-
-    cout << "Welcome to Mastermind!\n";
-    cout << "Try to guess the secret code of " << codeLength << " colors.\n";
-    cout << "Colors are numbers from 1 to " << numColors << ".\n";
-    cout << "You have " << maxGuesses << " guesses.\n\n";
-    cout << "cheat mode open? " << "\n\n" ;
-    char cheat = 'N' ;
-    cin >> cheat ;
-
-    string secretCode = generateSecretCode(codeLength, numColors); 
-    if (cheat == 'Y'){
-       cout << secretCode <<"\n\n";
-    }
-
-    for (int guessNum = 1; guessNum <= maxGuesses; ++guessNum) {
-        cout << "Guess #" << guessNum << ": ";
-        string guess = getPlayerGuess(codeLength, numColors);
-        auto [correctPos, correctCol] = evaluateGuess(secretCode, guess);
-
-        cout << "Correct positions: " << correctPos << "\n";
-        cout << "Correct colors (wrong position): " << correctCol << "\n\n";
-
-        if (correctPos == codeLength) {
-            cout << "Congratulations! You cracked the code in " << guessNum << " guesses!\n";
-            char end = 'N';
-            cout << "play again? (Y/N)" ;
-            cin >> end ;
-            if(end == 'N'){
-                return 0 ;
+string checknumber(string secretCode, string playerGuess) {
+    int correctNumber = 0;
+    for ( int i = 0 ; i < playerGuess.length(); ++i) {
+        for ( int j = 0 ; j < secretCode.length() ; ++j ) {
+            if (playerGuess[i] == secretCode[j]) {
+                correctNumber++;
+                break;
             }
         }
     }
+    string output = "Number of Correct numbers: " + to_string(correctNumber);
+    return output;  
+}
 
-    cout << "Game Over! You ran out of guesses.\n";
-    cout << "The secret code was: ";
-    for (char color : secretCode) {
-        cout << color << " ";
+int main(){
+    cout << "Welcome to the Number Guessing Game!" << endl;
+    srand(static_cast<unsigned int>(time(0))); // Seed the random number generator
+    int codeLength = 4;
+    cout << "Enter the length of the secret code (default is 4): "; 
+    cin >> codeLength;
+    string secretCode = generateSecretCode(codeLength);
+    cout << "Try to guess the " << codeLength << "-digit secret code." << endl;
+    cout << "cheat mode open?(Y/N): ";
+    char cheatMode = 'N';
+    cin >> cheatMode;
+    if (cheatMode == 'Y' || cheatMode == 'y') {
+        cout << "The secret code is: " << secretCode << endl;
+    } 
+
+    while (true) {
+        string playerGuess = getPlayerGuess(codeLength);
+        cout << checkposition(secretCode, playerGuess) << endl;
+        cout << checknumber(secretCode, playerGuess) << endl;
+
+        if (playerGuess == secretCode) {
+            cout << "Congratulations! You've guessed the secret code: " << secretCode << endl;
+            break;
+        }
     }
-    cout << "\n";
+
+    cout << "Thank you for playing!" << endl;
+    cout << "try again? (Y/N): ";
+    char tryAgain;  
+    cin >> tryAgain;
+    if (tryAgain == 'Y' || tryAgain == 'y') {
+        main(); // Restart the game
+    } else {
+        cout << "Goodbye!" << endl;
+        return 0;
+    }
 
     return 0;
 }
