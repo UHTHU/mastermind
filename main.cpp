@@ -6,10 +6,10 @@
 
 using namespace std;
 
-string generateSecretCode(int length) {
+string generateSecretCode(int length, int range = 10) {
     string code;
     for (int i = 0; i < length; ++i) {
-        char digit = '0' + rand() % 10; // Generate a random digit from '0' to '9'
+        char digit = '0' + rand() % range + 1; 
         code += digit;
     }
     return code;
@@ -51,25 +51,54 @@ string checknumber(string secretCode, string playerGuess) {
     return output;  
 }
 
-int main(){
-    cout << "Welcome to the Number Guessing Game!" << endl;
-    srand(static_cast<unsigned int>(time(0))); // Seed the random number generator
-    int codeLength = 4;
-    cout << "Enter the length of the secret code (default is 4): "; 
-    cin >> codeLength;
-    string secretCode = generateSecretCode(codeLength);
-    cout << "Try to guess the " << codeLength << "-digit secret code." << endl;
+void getdifficulty( string category, int& defaultValue) {
+    cout << "Enter the value of " << category << " (default is " << defaultValue << ") : " << endl;
+    cin >> defaultValue;
+}
+
+void cheatmode(string secretCode) {
     cout << "cheat mode open?(Y/N): ";
     char cheatMode = 'N';
     cin >> cheatMode;
     if (cheatMode == 'Y' || cheatMode == 'y') {
         cout << "The secret code is: " << secretCode << endl;
-    } 
+    } else if (cheatMode == 'N' || cheatMode == 'n') {
+        cout << "Cheat mode is off." << endl;
+    }
+}
+
+int main(){
+    cout << "Welcome to the Number Guessing Game!" << endl;
+    srand(static_cast<unsigned int>(time(0))); // Seed the random number generator
+
+    int codeLength = 4;
+    int range = 10; 
+    int maxAttempts = 10; 
+    getdifficulty("code length", codeLength);
+    getdifficulty("range", range);      
+    getdifficulty("max attempts", maxAttempts);
+
+    string secretCode = generateSecretCode(codeLength,range);
+
+    cheatmode(secretCode);
+
+    int attempts = 0;
+    cout << "Secret code has been generated. Try to guess it!" << endl;
+    cout << "Code length: " << codeLength << ", Range: 1-" << range  << ", Max attempts: " << maxAttempts << endl;
+    
+    
 
     while (true) {
         string playerGuess = getPlayerGuess(codeLength);
         cout << checkposition(secretCode, playerGuess) << endl;
         cout << checknumber(secretCode, playerGuess) << endl;
+        attempts++;
+        cout << "Attempts used: " << attempts << "/" << maxAttempts << endl;
+
+        if (attempts >= 10) {
+            cout << "You've used all attempts! The secret code was: " << secretCode << endl;
+            break;
+        }
 
         if (playerGuess == secretCode) {
             cout << "Congratulations! You've guessed the secret code: " << secretCode << endl;
