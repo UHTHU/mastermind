@@ -54,17 +54,28 @@ string checknumber(string secretCode, string playerGuess) {
 void getdifficulty( string category, int& defaultValue) {
     cout << "Enter the value of " << category << " (default is " << defaultValue << ") : " << endl;
     cin >> defaultValue;
+    if (category == "range"){
+        while (defaultValue < 1 || defaultValue > 10) { 
+            cout << "Invalid range. Must be between 1 to 10." << endl;
+            cin >> defaultValue;
+        }
+    }
 }
 
 void cheatmode(string secretCode) {
     cout << "cheat mode open?(Y/N): ";
     char cheatMode = 'N';
     cin >> cheatMode;
+    while (cheatMode != 'Y' && cheatMode != 'y' && cheatMode != 'N' && cheatMode != 'n') {
+        cout << "Invalid input. Please enter Y or N: ";
+        cin >> cheatMode;
+    }
     if (cheatMode == 'Y' || cheatMode == 'y') {
         cout << "The secret code is: " << secretCode << endl;
     } else if (cheatMode == 'N' || cheatMode == 'n') {
         cout << "Cheat mode is off." << endl;
     }
+    cout << endl ;
 }
 
 int main(){
@@ -77,6 +88,7 @@ int main(){
     getdifficulty("code length", codeLength);
     getdifficulty("range", range);      
     getdifficulty("max attempts", maxAttempts);
+    cout << endl ;
 
     string secretCode = generateSecretCode(codeLength,range);
 
@@ -85,6 +97,7 @@ int main(){
     int attempts = 0;
     cout << "Secret code has been generated. Try to guess it!" << endl;
     cout << "Code length: " << codeLength << ", Range: 1-" << range  << ", Max attempts: " << maxAttempts << endl;
+    cout << endl ;
     
     
 
@@ -94,6 +107,7 @@ int main(){
         cout << checknumber(secretCode, playerGuess) << endl;
         attempts++;
         cout << "Attempts used: " << attempts << "/" << maxAttempts << endl;
+        cout << endl ;
 
         if (attempts >= 10) {
             cout << "You've used all attempts! The secret code was: " << secretCode << endl;
@@ -107,9 +121,14 @@ int main(){
     }
 
     cout << "Thank you for playing!" << endl;
+
     cout << "try again? (Y/N): ";
     char tryAgain;  
     cin >> tryAgain;
+    while (tryAgain != 'Y' && tryAgain != 'y' && tryAgain != 'N' && tryAgain != 'n') {
+        cout << "Invalid input. Please enter Y or N: ";
+        cin >> tryAgain;
+    }
     if (tryAgain == 'Y' || tryAgain == 'y') {
         main(); // Restart the game
     } else {
