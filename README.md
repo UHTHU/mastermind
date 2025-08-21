@@ -1,11 +1,11 @@
 # Mastermind
 
-A simple command-line implementation of the Mastermind game in C++.
+A customizable command-line implementation of the Mastermind game in C++.
 
 ## How to Play
 
-- The computer generates a secret code consisting of 4 numbers (colors), each between 1 and 6.
-- You have 10 guesses to crack the code.
+- The computer generates a secret code consisting of numbers (default: 4 digits, each between 1 and 10).
+- You can set the code length, the range of digits, and the maximum number of attempts at the start.
 - After each guess, you’ll be told:
   - How many numbers are correct and in the correct position.
   - How many numbers are correct but in the wrong position.
@@ -28,6 +28,12 @@ Run the executable:
 ./main.exe
 ```
 
+## Features
+
+- Customizable code length, digit range, and max attempts.
+- Cheat mode to reveal the secret code.
+- Option to play again after each game.
+
 ## Files
 
 - [`main.cpp`](main.cpp): Main source code.
@@ -36,4 +42,4 @@ Run the executable:
 
 ## License
 
-MIT License (add your own
+MIT License (add your own license information)
