@@ -1,9 +1,11 @@
-#include <iostream>
-#include <string>
-#include <ctime>
-#include <fstream>
+#include <iostream>//for input and output
+#include <string>//for string handling
+#include <ctime>//for rand()
+#include <fstream>//for file handling
+#include <chrono> // Add this include for timing
 
 using namespace std;
+using namespace std::chrono; // in the timing functions
 
 int codeLength = 4;
 int range = 6; 
@@ -14,6 +16,9 @@ string latestguess;
 int xxx = 1;
 int currentgamefile = 0;
 
+steady_clock::time_point startTime;
+steady_clock::time_point endTime;
+
 string generateSecretCode(int length, int range ) {
     string code;
     for (int i = 0; i < length; ++i) {
@@ -21,14 +26,14 @@ string generateSecretCode(int length, int range ) {
         code += digit;
     }
     return code;
-}
+}// ...
 
 void Input_validation(string& input,int length) {
     while (input.length() != length ) {
         cout << "Invalid input. Please enter a " << length << "-digit number: ";
         cin >> input;
     }
-}
+}// ...
 
 string redpegs(string secretCode, string playerGuess) {
     int correctPosition = 0;
@@ -43,9 +48,12 @@ string redpegs(string secretCode, string playerGuess) {
 
 string whitepegs(string secretCode, string playerGuess) {
     int correctNumber = 0;
-    for ( int i = 0 ; i < playerGuess.length(); ++i) {
-        for ( int j = 0 ; j < secretCode.length() ; ++j ) {
-            if (playerGuess[i] == secretCode[j] && i != j) {
+    for ( int i = 0 ; i < secretCode.length(); ++i) {
+        for ( int j = 0 ; j < playerGuess.length() ; ++j ) {
+            if (secretCode[i] == playerGuess[i]) {
+                i++;
+            }
+            if (secretCode[i] == playerGuess[j] && i != j) {
                 correctNumber++;
                 break;
             }
@@ -83,6 +91,16 @@ void attemptleft(int attempts, int maxAttempts) {
     cout << "You have used " << attempts << " out of " << maxAttempts << " attempts." << endl;
     cout << "You have " << (maxAttempts - attempts) << " attempts left." << endl;
     cout << endl ;
+}
+
+void start_timer(){ 
+    startTime = steady_clock::now();
+}
+
+void stop_timer(){
+    endTime = steady_clock::now();
+    auto duration = duration_cast<seconds>(endTime - startTime).count();
+    cout << "Elapsed time: " << duration << " seconds." << endl;
 }
 
 void gamepage(){
@@ -198,10 +216,10 @@ void loadgame(string &secretCode, string &latestguess){
 void tryagain();
 
 void game(string secretCode, int codeLength, int range, int maxAttempts, string latestguess) {
-    secretCode = generateSecretCode(codeLength, range);
+    start_timer(); // Start the timer at the beginning of the game
     while (true) {
             string guess;
-            cout << "Enter your guess (or type 'exit', 'save', 'load', 'cheat', 'settings', 'start'): ";
+            cout << "Enter your guess (or type 'exit', 'save', 'load', 'cheat', 'settings', 'start', 'soc'): ";
             cin >> guess ;
             if (guess == "exit") {
                 cout << "Goodbye!" << endl;
@@ -234,13 +252,15 @@ void game(string secretCode, int codeLength, int range, int maxAttempts, string 
             cout << whitepegs(secretCode, guess) << endl;
             attempts++ ;
             attemptleft(attempts, maxAttempts) ;
-            if (attempts > maxAttempts) {
+            if (attempts >= maxAttempts) {
                 cout << "You've used all attempts! The secret code was: " << secretCode << endl;
+                stop_timer(); // Show time used when game ends
                 break;
             }
 
             if (guess == secretCode) {
                 cout << "Congratulations! You've guessed the secret code: " << secretCode << endl;
+                stop_timer(); // Show time used when game ends
                 break;
             }
             latestguess = guess;
@@ -255,13 +275,12 @@ int main(){
     
     gamepage();
     string xx;
+    srand((unsigned)time(NULL));
     secretCode = generateSecretCode(codeLength, range);
     cin >> xx;
     attempts = 0;
     latestguess = "";
 
-    srand((unsigned)time(NULL));  // Seed the random number generator
-    srand((unsigned)time(NULL));
     while(true){
         if (xx == "settings") {
             settings();
@@ -278,6 +297,11 @@ int main(){
             cout << "Starting a new game..." << endl;
             game( secretCode, codeLength, range, maxAttempts, latestguess);
             tryagain();
+        }else if (xx == "soc") {
+            cout << "Enter your own secret code: ";
+            cin >> secretCode;
+            Input_validation(secretCode, codeLength);
+            cout << "Your secret code is set." << endl;
         }else {
             cout << "Invalid command. Please try again." << endl;
             main();
@@ -302,7 +326,7 @@ void tryagain(){
     if (tryAgain == 'Y' || tryAgain == 'y') {
         main(); // Restart the game
     } else {
-        cout << "Goodbye!" << endl;
+        cout << "Goodbye! press any key to exit" << endl;
         xxx = 0;
         main(); // Exit the game
     }
