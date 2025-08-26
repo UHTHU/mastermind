@@ -4,7 +4,7 @@
 #include <fstream>//for file handling
 #include <chrono> // Add this include for timing
 #include <cstdlib> // for exit()
-// i have to record this thing
+// i have to record this thing:
 // Au didnt teach exit()
 //so i didn't know
 // therefore i made a global var xxx
@@ -12,6 +12,7 @@
 //everything i want to exit in other function 
 // i set xxx = 0
 // how stupid is that :(
+//no worries i used exit() in the final version :)
 
 using namespace std;
 using namespace std::chrono; // in the timing functions
@@ -324,6 +325,7 @@ int main(){
     return 0;
 }
 
+//try again?
 void tryagain(){
     cout << "try again? (Y/N): ";
     char tryAgain;  
@@ -341,6 +343,11 @@ void tryagain(){
 }
 
 //command handler function
+//last function
+//can i give myself a break ?
+//seems not :(
+//hope i can get full marks for this
+//at least i need to be better than chilam
 bool handle_command(string &xx, string &secretCode, string &latestguess) {
     if (xx == "customize_difficulty") {
         customize_difficulty();
