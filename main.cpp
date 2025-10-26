@@ -1,12 +1,11 @@
-#include <iostream>//for input and output
-#include <string>//for string handling
-#include <ctime>//for rand()
-#include <fstream>//for file handling
-#include <chrono> // Add this include for timing
-#include <cstdlib> // for exit()
+#include <iostream> //for input and output
+#include <string>   //for string handling
+#include <ctime>    //for rand()
+#include <fstream>  //for file handling
+#include <chrono>   // Add this include for timing
+#include <cstdlib>  // for exit()
 using namespace std;
-using namespace std::chrono; // in the timing functions
-
+using namespace std::chrono; // for timing 
 int codeLength = 4;
 int range = 6; 
 int maxAttempts = 10; 
@@ -14,30 +13,43 @@ int attempts = 0;
 string secretCode;
 string latestguess;
 int currentgamefile = 0;
+bool allowDuplicates = true ;
+bool gamestarted = false;
 
 steady_clock::time_point startTime;
 steady_clock::time_point endTime;
 
-
-string generateSecretCode(int length, int range ) {
+string generateSecretCode(int length, int range, bool allowDuplicates) {
     string code;
     for (int i = 0; i < length; ++i) {
-        char digit = '0' + rand() % range + 1; 
+        char digit;
+        bool isDuplicate;
+        do {
+            digit = '0' + rand() % range + 1;
+            isDuplicate = false;
+            if (!allowDuplicates) {
+                for (int j = 0; j < i; ++j) {
+                    if (code[j] == digit) {
+                        isDuplicate = true;
+                        break;
+                    }
+                }
+            }
+        } while (isDuplicate);
         code += digit;
     }
     return code;
 }
 
-bool Is_command(string& input,int length) {
-    while (input.length() != length ) {
-        if (input == "exit" || input == "save" || input == "load" || input == "cheat" || input == "customize_difficulty" || input == "start" || input == "soc") {
-            return true; // allow commands to pass through
+bool isdigitstring(string input) {
+    for (int i = 0; i < input.length(); ++i) {
+        if (!isdigit(input[i])) {
+            return false;
         }
-        cout << "Invalid input. Please enter a " << length << "-digit number: ";
-        cin >> input;
     }
     return true;
 }
+
 string redpegs(string secretCode, string playerGuess) {
     int correctPosition = 0;
     for (int i = 0; i < secretCode.length(); ++i) {
@@ -48,116 +60,139 @@ string redpegs(string secretCode, string playerGuess) {
     string output = "Number of red pegs: " + to_string(correctPosition);
     return output;
 }
+
 string whitepegs(string secretCode, string playerGuess) {
+    int length = secretCode.length();  
+    bool used[20] = {false}; // assume max is 20
     int correctNumber = 0;
-    // Create frequency maps for secret and guess
-    int secretCount[10] = {0};  // Assuming digits 0-9
-    int guessCount[10] = {0};
     
-    for (char c : secretCode) {
-        secretCount[c - '0']++;
-    }
-    for (char c : playerGuess) {
-        guessCount[c - '0']++;
-    }
+    string redOutput = redpegs(secretCode, playerGuess);
+    int redPegs = stoi(redOutput.substr(19));  
     
-    // Calculate total matches
-    int totalMatches = 0;
-    for (int i = 0; i < 10; ++i) {
-        totalMatches += min(secretCount[i], guessCount[i]);
-    }
-    
-    // Subtract red pegs (correct position matches)
-    int redPegs = 0;
-    for (size_t i = 0; i < secretCode.length(); ++i) {
-        if (secretCode[i] == playerGuess[i]) {
-            redPegs++;
+    for (int i = 0; i < length; ++i) {
+        if (secretCode[i] == playerGuess[i]) continue;  
+        for (int j = 0; j < length; ++j) {
+            if (!used[j] && secretCode[j] == playerGuess[i]) {
+                correctNumber++;
+                used[j] = true;  
+                break;  
+            }
         }
     }
     
-    correctNumber = totalMatches - redPegs;
-    
     string output = "Number of white pegs: " + to_string(correctNumber);
-    return output;  
+    return output;
 }
-void getdifficulty( string category, int& defaultValue) {
-    cout << "Enter the value of " << category << " (default is " << defaultValue << ") : " << endl;
+
+void getdifficulty(string category, int& defaultValue) {
+    cout << "Enter the value for " << category << " (default is " << defaultValue << "): ";
     cin >> defaultValue;
-    if (category == "range"){
+    if (category == "range") {
         while (defaultValue < 1 || defaultValue > 10) { 
-            cout << "Invalid range. Must be between 1 to 10." << endl;
+            cout << "Invalid range. Must be between 1 and 10." << endl;
+            cout << "Enter the value for " << category << ": ";
+            cin >> defaultValue;
+        }
+    } else if (category == "code length" || category == "max attempts") {
+        while (defaultValue < 1 || defaultValue > 20) {
+            cout << "Invalid value. Must be between 1 and 20." << endl;
+            cout << "Enter the value for " << category << ": ";
+            cin >> defaultValue;
+        }
+    } else if (category == "allow duplicates (1 for yes, 0 for no)") {
+        while (defaultValue != 0 && defaultValue != 1) {
+            cout << "Invalid value. Must be 0 or 1." << endl;
+            cout << "Enter the value for " << category << ": ";
             cin >> defaultValue;
         }
     }
 }
 
-void customize_difficulty(){
+void customize_difficulty() {
     getdifficulty("code length", codeLength);
     getdifficulty("range", range);
     getdifficulty("max attempts", maxAttempts);
-    cout << endl ;
-    cout << "Code length: " << codeLength << ", Range: 1-" << range  << ", Max attempts: " << maxAttempts << endl;
-    cout << endl ;
+    int intallowDuplicates = allowDuplicates ? 1 : 0;
+    getdifficulty("allow duplicates (1 for yes, 0 for no)", intallowDuplicates);
+    allowDuplicates = (intallowDuplicates == 1);
+    cout << endl;
+    cout << "Settings updated: Code length " << codeLength 
+         << ", Digits 1-" << range 
+         << ", Max attempts " << maxAttempts 
+         << ", Duplicates " << (allowDuplicates ? "allowed" : "not allowed") << "." << endl;
+    cout << endl;
 }
+
 void cheatmode(string secretCode) {
-    cout << "The secret code is: " << secretCode << endl;
+    cout << "Cheat mode activated! The secret code is: " << secretCode << endl;
 }
+
 void attemptleft(int attempts, int maxAttempts) {
-    cout << "You have used " << attempts << " out of " << maxAttempts << " attempts." << endl;
-    cout << "You have " << (maxAttempts - attempts) << " attempts left." << endl;
-    cout << endl ;
-}// only for typing less in main() lazy me  :)
+    cout << "Attempts used: " << attempts << " / " << maxAttempts << " ("
+         << (maxAttempts - attempts) << " left)." << endl;
+    cout << endl;
+}
 
-void start_timer(){ 
+void start_timer() { 
     startTime = steady_clock::now();
-}// chrono library 
-// i dont think i need to explain this one :)
+}
 
-void stop_timer(){
+void stop_timer() {
     endTime = steady_clock::now();
     auto duration = duration_cast<seconds>(endTime - startTime).count();
-    cout << "Elapsed time: " << duration << " seconds." << endl;
-}// same as above :)
+    cout << "Time elapsed: " << duration << " seconds." << endl;
+}
 
-void gamepage(){
+void gamepage() {
     cout << "===================================" << endl;
     cout << "          MASTERMIND GAME          " << endl;
     cout << "===================================" << endl;
     cout << "      Welcome to Mastermind!       " << endl;
     cout << endl;
-    cout << "Game Rules:"<< endl;
-    cout << "1. A secret code of 4 digits (1-6) is generated." << endl;
-    cout << "2. You have 10 tries to guess the code." << endl;
-    cout << "3. Feedback after each guess:"<< endl;
+    cout << "Game Rules:" << endl;
+    cout << "1. A secret code of " << codeLength << " digits (1-" << range << ") is generated." << endl;
+    cout << "2. You have " << maxAttempts << " tries to guess the code." << endl;
+    cout << "3. Feedback after each guess:" << endl;
     cout << "   - Red Peg: Correct digit in correct position" << endl;
     cout << "   - White Peg: Correct digit in wrong position" << endl;
     cout << endl;
     cout << "Special Commands:" << endl;
-    cout << "cheat -> Show the secret code" << endl;
-    cout << "save -> Save your current game"    << endl;
-    cout << "load -> Load your saved game" << endl;
-    cout << "exit -> Exit the game" << endl;
-    cout << "customize_difficulty -> Change game settings e.g. code length, range and maxattempts " << endl;
-    cout << "start -> Start a new game" << endl;
-    cout << "soc -> set own code " << endl;
-    cout << endl ;
+    cout << "/1 -> Start a new game" << endl;
+    cout << "/2 -> Save your current game" << endl;
+    cout << "/3 -> Load a saved game" << endl;
+    cout << "/4 -> Exit the game" << endl;
+    cout << "/5 -> Change game settings" << endl;
+    cout << "/6 -> Show the secret code (cheat)" << endl;
+    cout << "/7 -> Set your own secret code" << endl;
+    cout << endl;
 }
-void savegame(string secretCode, string latestguess){
+
+void savegame(string secretCode, string latestguess) {
     const int totalGames = 5;
     const int linesPerGame = 7;
-    string lines[totalGames * linesPerGame] = {""};
+    string lines[totalGames * linesPerGame];
 
-    // Read existing file lines
-    ifstream inFile("savegame.txt");
-    int idx = 0;
-    while (idx < totalGames * linesPerGame) {
-        getline(inFile, lines[idx]);
-        idx++;
+    // set a array 
+    for (int i = 0; i < totalGames * linesPerGame; ++i) {
+        lines[i] = "";
     }
-    inFile.close();
 
-    cout << "save which game file? (0/1/2/3/4): ";
+    // load exiting file 2 array
+    ifstream inFile("savegame.txt");
+    if (inFile) {
+        int idx = 0;
+        while (idx < totalGames * linesPerGame && getline(inFile, lines[idx])) {
+            ++idx;
+        }
+        inFile.close();
+    }
+
+    cout << "Save to which slot? (0-4): ";
     cin >> currentgamefile;
+    if (currentgamefile < 0 || currentgamefile > 4) {
+        cout << "Invalid slot. Using 0." << endl;
+        currentgamefile = 0;
+    }
     int base = currentgamefile * linesPerGame;
 
     lines[base + 0] = to_string(currentgamefile);
@@ -167,52 +202,56 @@ void savegame(string secretCode, string latestguess){
     lines[base + 4] = to_string(attempts);
     lines[base + 5] = secretCode;
     lines[base + 6] = latestguess;
-    //save the game in a string array
-    //overwrite only the current game corresponding lines
 
-    // Write all lines back including the original and updated 
+    // load array 2 file
     ofstream outFile("savegame.txt");
     for (int i = 0; i < totalGames * linesPerGame; ++i) {
         outFile << lines[i] << endl;
     }
     outFile.close();
-    //using for loop to put all line[35] into txt
 
-    cout << "Game saved successfully." << endl;
-    cout <<" current game file: " << currentgamefile << endl;
-    cout <<" code length: " << codeLength << endl;
-    cout <<" range: " << range << endl; 
-    cout <<" max attempts: " << maxAttempts << endl;
-    cout <<" attempts: " << attempts << endl;
-    cout <<" secret code: " << "****" << endl;
-    cout <<" latest guess: " << latestguess << endl;
-    //debugging
+    cout << "Game saved to slot " << currentgamefile << "." << endl;
+    cout << "Settings: Code length " << codeLength 
+         << ", Digits 1-" << range 
+         << ", Max attempts " << maxAttempts 
+         << ", Duplicates " << (allowDuplicates ? "allowed" : "not allowed") << "." << endl;
+    cout << "Progress: " << attempts << " / " << maxAttempts << " attempts used." << endl;
+    cout << "Last guess: " << latestguess << endl;
+    cout << endl;
 }
 
-void loadgame(string &secretCode, string &latestguess){
+void loadgame(string &secretCode, string &latestguess) {
     const int totalGames = 5;
     const int linesPerGame = 7;
-    string lines[totalGames * linesPerGame] = {""};
+    string lines[totalGames * linesPerGame];
+
+    for (int i = 0; i < totalGames * linesPerGame; ++i) {
+        lines[i] = "";
+    }
 
     ifstream inFile("savegame.txt");
-    int idx = 0;
-    while (idx < totalGames * linesPerGame) {
-        getline(inFile, lines[idx]);
-        idx++;
+    if (inFile) {
+        int idx = 0;
+        while (idx < totalGames * linesPerGame && getline(inFile, lines[idx])) {
+            ++idx;
+        }
+        inFile.close();
     }
-    inFile.close();
-    //read all lines in txt
-    //getline usage: getline; getline; getline; --> line1 line2 lin3 
 
-    cout << "load which game file? (0/1/2/3/4): ";
+    cout << "Load from which slot? (0-4): ";
     cin >> currentgamefile;
+    if (currentgamefile < 0 || currentgamefile > 4) {
+        cout << "Invalid slot. Using 0." << endl;
+        currentgamefile = 0;
+    }
     int base = currentgamefile * linesPerGame;
-    //1-7 line for game0 8-14line for game1 and so on
-    // Read from the slot
+
     if (lines[base].empty()) {
-        cout << "No saved game in this slot." << endl;
+        cout << "No saved game in slot " << currentgamefile << "." << endl;
         return;
     }
+//loadgame can refer to savegame ( they are same but in reverse )
+
     currentgamefile = stoi(lines[base + 0]);
     codeLength = stoi(lines[base + 1]);
     range = stoi(lines[base + 2]);
@@ -220,123 +259,143 @@ void loadgame(string &secretCode, string &latestguess){
     attempts = stoi(lines[base + 4]);
     secretCode = lines[base + 5];
     latestguess = lines[base + 6];
-    //same as savegame
-    //stoi is string to int
 
-    cout << "Game loaded successfully." << endl;
-    cout <<" current game file: " << currentgamefile << endl;
-    cout <<" code length: " << codeLength << endl;
-    cout <<" range: " << range << endl; 
-    cout <<" max attempts: " << maxAttempts << endl;
-    cout <<" attempts: " << attempts << endl;
-    cout <<" secret code: " << "****" << endl;
-    cout <<" latest guess: " << latestguess << endl;
-    //debugging
+    gamestarted = true;  
+    start_timer();  
+
+    cout << "Game loaded from slot " << currentgamefile << "." << endl;
+    cout << "Settings: Code length " << codeLength 
+         << ", Digits 1-" << range 
+         << ", Max attempts " << maxAttempts 
+         << ", Duplicates " << (allowDuplicates ? "allowed" : "not allowed") << "." << endl;
+    cout << "Progress: " << attempts << " / " << maxAttempts << " attempts used." << endl;
+    cout << "Last guess: " << latestguess << endl;
+    cout << endl;
 }
 
-void tryagain();
-void game(string secretCode, int codeLength, int range, int maxAttempts, string latestguess);
-bool handle_command(string &firstcommand, string &secretCode, string &latestguess);
+void set_own_code(string &secretCode) {
+    string customCode;
+    bool valid = false;
+    cout << "Enter your custom secret code (" << codeLength << " digits, 1-" << range << "): ";
+    cin >> customCode;
+    secretCode = customCode;
+    cout << "Custom secret code set!" << endl;
+    cout << endl;
+}
 
-bool isdigit(string c) {
-    for (int i = 0; i < c.length(); ++i) {
-        if (c[i] < '0' || c[i] > '9') {
+void handle_command(string input) {
+    if (input == "/1") {
+        gamestarted = true;
+        attempts = 0;
+        secretCode = generateSecretCode(codeLength, range, allowDuplicates);
+        start_timer();
+        cout << "New game started! Good luck." << endl;
+        cout << endl;
+    } else if (input == "/2") {
+        if (gamestarted) {
+            savegame(secretCode, latestguess);
+        } else {
+            cout << "No active game to save. Start a game first (/1)." << endl;
+        }
+    } else if (input == "/3") {
+        loadgame(secretCode, latestguess);
+    } else if (input == "/4") {
+        cout << "Thanks for playing! Goodbye." << endl;
+        exit(0);
+    } else if (input == "/5") {
+        customize_difficulty();
+    } else if (input == "/6") {
+        if (gamestarted) {
+            cheatmode(secretCode);
+        } else {
+            cout << "No active game. Start a game first (/1)." << endl;
+        }
+    } else if (input == "/7") {
+        if (gamestarted) {
+            cout << "Warning: Changing secret mid-game." << endl;
+        }
+        set_own_code(secretCode);
+    }
+}
+
+bool iscommand(string input) {
+    return (input == "/1" || input == "/2" || input == "/3" || input == "/4" || 
+            input == "/5" || input == "/6" || input == "/7");
+}
+
+bool validguesscheck(string guess) {
+    if (guess.length() != static_cast<size_t>(codeLength)) {
+        cout << "Invalid length: Must be " << codeLength << " digits." << endl;
+        return false;
+    }
+    if (!isdigitstring(guess)) {
+        cout << "Invalid: Only digits allowed." << endl;
+        return false;
+    }
+    for (int i = 0; i < codeLength; ++i) {
+        if (guess[i] < '1' || guess[i] > '0' + range) {
+            cout << "Invalid digit: Use 1-" << range << "." << endl;
             return false;
         }
     }
+    return true;
 }
 
-void game(string secretCode, int codeLength, int range, int maxAttempts, string latestguess) {
-    start_timer(); // Start the timer at the beginning of the game
-    while (true) {
-            string guess;
-            cout << "Enter your guess (or type 'exit', 'save', 'load', 'cheat', 'customize_difficulty', 'start', 'soc'): ";
-            cin >> guess ;
-            Is_command(guess,codeLength);
-            handle_command(guess, secretCode, latestguess);
-            if (isdigit(guess) && guess.length() == codeLength) {
-                attempts++;
-                cout << redpegs(secretCode, guess) << endl;
-                cout << whitepegs(secretCode, guess) << endl;//real game part, only 3 lines lmao
-                attemptleft(attempts, maxAttempts) ;
-            }
-            if (attempts >= maxAttempts) {
-                cout << "You've used all attempts! The secret code was: " << secretCode << endl;
-                stop_timer(); 
-                break;
-            }
-
-            if (guess == secretCode) {
-                cout << "Congratulations! You've guessed the secret code: " << secretCode << endl;
-                stop_timer(); // Show time used when game ends
-                break;
-            }
-            latestguess = guess;
+void game(string guess) {
+    if (!validguesscheck(guess)) {
+        return;  
     }
+
+    cout << "Guess: " << guess << endl;
+    latestguess = guess;
+    attempts++;
+
+    cout << redpegs(secretCode, guess) << endl;
+    cout << whitepegs(secretCode, guess) << endl;
+    attemptleft(attempts, maxAttempts);
+    
+    if (guess == secretCode) {
+        cout << "Congratulations! You cracked the code!" << endl;
+        stop_timer();
+        gamestarted = false;
+        attempts = 0;
+    } else if (attempts >= maxAttempts) {
+        cout << "Out of attempts! The code was: " << secretCode << endl;
+        stop_timer();
+        gamestarted = false;
+        attempts = 0;
+    }
+    cout << endl;
 }
 
-int main(){
-    gamepage();
-    string firstcommand;
-    srand((unsigned)time(NULL));
-    secretCode = generateSecretCode(codeLength, range);
-    cin >> firstcommand;
-    attempts = 0;
-    latestguess = "";
-    //firstcommand is the starter command
+int main() {
+    srand(static_cast<unsigned int>(time(0)));  // Seed 
+    gamepage(); 
+
+    string input;
+    
     while (true) {
-        if (!handle_command(firstcommand, secretCode, latestguess)) break;
-        cin >> firstcommand;
-    }  
+        if (!gamestarted) {
+            cout << "Enter a command (/1 to start): ";
+        } else {
+            cout << "Enter guess or command: ";
+        }
+        cin >> input;
+        
+        if (iscommand(input)) {
+            handle_command(input);
+            if (input == "/4") {
+                break;
+            }
+            continue;
+        }
+        
+        if (gamestarted) {
+            game(input);
+        } else {
+            cout << "Game not started. Use /1 to begin." << endl;
+            cout << endl;
+        }
+    }
     return 0;
-}
-
-//try again?
-void tryagain(){
-    cout << "try again? (Y/N): ";
-    char tryAgain;  
-    cin >> tryAgain;
-    while (tryAgain != 'Y' && tryAgain != 'y' && tryAgain != 'N' && tryAgain != 'n') {
-        cout << "Invalid input. Please enter Y or N: ";
-        cin >> tryAgain;
-    }
-    if (tryAgain == 'Y' || tryAgain == 'y') {
-        main(); // Restart the game
-    } else {
-        cout << "Goodbye! press any key to exit" << endl;
-        exit(0); // Exit the program
-    }
-}
-
-bool handle_command(string &firstcommand, string &secretCode, string &latestguess) {
-    if (firstcommand == "customize_difficulty") {
-        customize_difficulty();
-    } else if (firstcommand == "exit") {
-        cout << "Goodbye!" << endl;
-        tryagain();
-        return false; // break loop
-    } else if (firstcommand == "cheat") {
-        cheatmode(secretCode);
-        return true; // continue loop
-    } else if (firstcommand == "save") {
-        savegame(secretCode, latestguess);
-    } else if (firstcommand == "load") {
-        loadgame(secretCode, latestguess);
-    } else if (firstcommand == "start") {
-        cout << "Starting a new game..." << endl;
-        game(secretCode, codeLength, range, maxAttempts, latestguess);
-        tryagain();
-        return false; // break loop
-    } else if (firstcommand == "soc") {
-        cout << "Enter your own secret code: ";
-        cin >> secretCode;
-        codeLength = secretCode.length();
-    } else if (Is_command(firstcommand, codeLength)) {
-        return true; // continue loop
-    } else {
-        cout << "Invalid command. Please try again." << endl;
-        main();
-        return false; // break loop
-    }
-    return true; // continue loop
 }
