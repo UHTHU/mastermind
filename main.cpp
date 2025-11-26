@@ -108,7 +108,7 @@ void getdifficulty(string category, int& defaultValue) {
     }
 }
 
-void customize_difficulty() {
+int customize_difficulty() {
     getdifficulty("code length", codeLength);
     getdifficulty("range", range);
     getdifficulty("max attempts", maxAttempts);
@@ -121,6 +121,7 @@ void customize_difficulty() {
          << ", Max attempts " << maxAttempts 
          << ", Duplicates " << (allowDuplicates ? "allowed" : "not allowed") << "." << endl;
     cout << endl;
+    return 0; 
 }
 
 void cheatmode(string secretCode) {
@@ -278,6 +279,26 @@ void set_own_code(string &secretCode) {
     bool valid = false;
     cout << "Enter your custom secret code (" << codeLength << " digits, 1-" << range << "): ";
     cin >> customCode;
+    while (!valid) {
+        if (int i = customCode.length(); i != codeLength) {
+            cout << "Invalid length. Must be " << codeLength << " digits." << endl;
+        } else if (!isdigitstring(customCode)) {
+            cout << "Invalid: Only digits allowed." << endl;
+        } else {
+            valid = true;
+            for (int i = 0; i < codeLength; ++i) {
+                if (customCode[i] < '1' || customCode[i] > '0' + range) {
+                    cout << "Invalid digit: Use 1-" << range << "." << endl;
+                    valid = false;
+                    break;
+                }
+            }
+        }
+        if (!valid) {
+            cout << "Enter your custom secret code (" << codeLength << " digits, 1-" << range << "): ";
+            cin >> customCode;
+        }
+    }
     secretCode = customCode;
     cout << "Custom secret code set!" << endl;
     cout << endl;
